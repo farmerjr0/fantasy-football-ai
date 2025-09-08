@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Draft Room</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f2f2f2;
+      padding: 30px;
+    }
+    h1 {
+      color: #333;
+    }
+    .player {
+      display: inline-block;
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin: 10px;
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .player:hover {
+      background: #c850c0;
+      color: #fff;
+    }
+    #drafted {
+      margin-top: 30px;
+      font-size: 1.2em;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>Draft Room</h1>
+  <p>Select a player to draft against the AI:</p>
+
+  <div class="player" onclick="draftPlayer('Justin Jefferson')">Justin Jefferson (WR)</div>
+  <div class="player" onclick="draftPlayer('Christian McCaffrey')">Christian McCaffrey (RB)</div>
+  <div class="player" onclick="draftPlayer('Patrick Mahomes')">Patrick Mahomes (QB)</div>
+  <div class="player" onclick="draftPlayer('Travis Kelce')">Travis Kelce (TE)</div>
+
+  <div id="drafted"></div>
+
+  <script>
+    function draftPlayer(player) {
+      const aiChoices = ['Tyreek Hill', 'Ja\'Marr Chase', 'Jalen Hurts', 'Saquon Barkley'];
+      const aiPick = aiChoices[Math.floor(Math.random() * aiChoices.length)];
+      document.getElementById('drafted').innerHTML = 
+        `<p>You drafted <b>${player}</b>.<br>The AI drafted <b>${aiPick}</b>.</p>`;
+    }
+  </script>
+</body>
+</html>
