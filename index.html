@@ -1,11 +1,102 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Fantasy AI Football</title>
+  <meta charset="UTF-8">
+  <title>Fantasy AI Football</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      background: linear-gradient(135deg, #ffcc70, #c850c0, #4158d0);
+      background-size: 400% 400%;
+      animation: gradientShift 10s ease infinite;
+      color: #fff;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .container {
+      margin-top: 15vh;
+      padding: 40px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 15px;
+      display: inline-block;
+      max-width: 500px;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 0.5em;
+    }
+
+    p {
+      font-size: 1.2em;
+      margin-bottom: 1.5em;
+    }
+
+    button {
+      background-color: #ffcc70;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 8px;
+      font-size: 1.2em;
+      cursor: pointer;
+      color: #222;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background-color: #c850c0;
+      color: #fff;
+    }
+
+    form {
+      margin-top: 1.5em;
+    }
+
+    input[type="email"] {
+      padding: 10px;
+      width: 70%;
+      border-radius: 6px;
+      border: none;
+      margin-bottom: 10px;
+    }
+
+    input[type="submit"] {
+      background-color: #4158d0;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 8px;
+      font-size: 1em;
+      cursor: pointer;
+      color: #fff;
+      transition: 0.3s;
+    }
+
+    input[type="submit"]:hover {
+      background-color: #ffcc70;
+      color: #222;
+    }
+  </style>
 </head>
-<body style="font-family: Arial; text-align: center; margin-top: 100px;">
-  <h1>Play Fantasy Football Anytime</h1>
-  <p>No league needed. Draft against AI in minutes.</p>
-  <button onclick="alert('Draft coming soon!')">Start Free Draft</button>
+<body>
+  <div class="container">
+    <h1>Fantasy AI Football</h1>
+    <p>Play fantasy football anytime.<br>No league needed. Draft against AI in minutes.</p>
+    <button onclick="alert('Draft coming soon!')">Start Free Draft</button>
+
+    <!-- Email Sign-up Form -->
+    <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+      <p>Be the first to know when the draft is ready:</p>
+      <input type="email" name="email" placeholder="Enter your email" required>
+      <br>
+      <input type="submit" value="Notify Me">
+    </form>
+  </div>
 </body>
 </html>
