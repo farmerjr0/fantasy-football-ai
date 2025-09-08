@@ -1,57 +1,561 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Draft Room</title>
+  <meta charset="utf-8" />
+  <title>Draft Room — Full Prototype</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
+    :root {
+      --bg1: #ffcc70;
+      --bg2: #c850c0;
+      --bg3: #4158d0;
+    }
     body {
-      font-family: Arial, sans-serif;
+      margin: 0;
+      font-family: Inter, Roboto, Arial, sans-serif;
+      background: linear-gradient(135deg, var(--bg1), var(--bg2), var(--bg3));
+      background-size: 400% 400%;
+      color: #111;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: gradientShift 12s ease infinite;
+    }
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%;}
+      50% { background-position: 100% 50%;}
+      100% { background-position: 0% 50%;}
+    }
+
+    .wrap {
+      width: 95%;
+      max-width: 1200px;
+      margin-top: 28px;
+    }
+
+    header {
       text-align: center;
-      background: #f2f2f2;
-      padding: 30px;
+      margin-bottom: 18px;
+      color: white;
     }
-    h1 {
-      color: #333;
+    header h1 { margin: 0; font-size: 2rem; }
+    header p { margin: 6px 0 0; opacity: 0.9; }
+
+    .controls {
+      display:flex;
+      gap: 12px;
+      align-items:center;
+      margin: 12px 0;
+      justify-content: center;
     }
-    .player {
-      display: inline-block;
-      border: 1px solid #ccc;
-      padding: 15px;
-      margin: 10px;
-      border-radius: 8px;
-      background: #fff;
+
+    .controls input[type=number] { width:72px; padding:8px; border-radius:6px; border:none; }
+    .controls button {
+      padding:10px 14px; border-radius:8px; border:none; cursor:pointer; font-weight:600;
+      background:rgba(255,255,255,0.95);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: rgba(255,255,255,0.9);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+
+    .draft-board {
+      overflow:auto;
+      max-height: 640px;
+    }
+
+    table.draft-table {
+      width:100%;
+      border-collapse: collapse;
+    }
+    table.draft-table th, table.draft-table td {
+      border: 1px solid rgba(0,0,0,0.06);
+      padding: 6px 8px;
+      text-align: center;
+      font-size: 14px;
+    }
+    table.draft-table th {
+      background: rgba(0,0,0,0.06);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    .current-pick {
+      background: linear-gradient(90deg, rgba(255,204,112,0.95), rgba(200,80,192,0.9));
+      color: #111;
+      font-weight:700;
+    }
+
+    .available {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      max-height: 640px;
+      overflow:auto;
+    }
+
+    .player-card {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:10px;
+      background: rgba(255,255,255,0.95);
+      border-radius:8px;
+      border: 1px solid rgba(0,0,0,0.06);
       cursor: pointer;
-      transition: 0.3s;
+      transition: transform .08s ease, box-shadow .12s ease;
     }
-    .player:hover {
-      background: #c850c0;
-      color: #fff;
+    .player-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+
+    .player-meta { font-size: 14px; color:#111; }
+    .player-pos { font-weight:700; margin-right:8px; }
+
+    .rosters {
+      margin-top:12px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
     }
-    #drafted {
-      margin-top: 30px;
-      font-size: 1.2em;
-      color: #333;
+    .team-box {
+      background: rgba(0,0,0,0.04);
+      padding:8px;
+      border-radius:8px;
+      width: calc(33% - 8px);
+      min-width:140px;
+      box-sizing: border-box;
+    }
+    .team-box h4 { margin:0 0 6px; font-size:13px; }
+
+    .small {
+      font-size:12px; color:#333;
+    }
+
+    footer { color: white; margin: 28px 0; }
+
+    /* responsive */
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .team-box { width: calc(50% - 8px); }
     }
   </style>
 </head>
 <body>
-  <h1>Draft Room</h1>
-  <p>Select a player to draft against the AI:</p>
+  <div class="wrap">
+    <header>
+      <h1>Draft Room — Full Prototype</h1>
+      <p>Human = Team 1. AI teams pick automatically. Players are unique — each can be drafted only once.</p>
+    </header>
 
-  <div class="player" onclick="draftPlayer('Justin Jefferson')">Justin Jefferson (WR)</div>
-  <div class="player" onclick="draftPlayer('Christian McCaffrey')">Christian McCaffrey (RB)</div>
-  <div class="player" onclick="draftPlayer('Patrick Mahomes')">Patrick Mahomes (QB)</div>
-  <div class="player" onclick="draftPlayer('Travis Kelce')">Travis Kelce (TE)</div>
+    <div class="controls panel">
+      <label class="small">Teams:
+        <input id="numTeams" type="number" min="2" max="20" value="10">
+      </label>
+      <label class="small">Rounds:
+        <input id="rounds" type="number" min="1" max="25" value="15">
+      </label>
 
-  <div id="drafted"></div>
+      <button id="startBtn">Start New Draft</button>
+      <button id="autoRunBtn">Auto-Run Rest (AI picks until human turn)</button>
+      <button id="exportBtn">Export Draft JSON</button>
+      <div id="status" style="display:inline-block; margin-left:10px; font-weight:700;"></div>
+    </div>
 
-  <script>
-    function draftPlayer(player) {
-      const aiChoices = ['Tyreek Hill', 'Ja\'Marr Chase', 'Jalen Hurts', 'Saquon Barkley'];
-      const aiPick = aiChoices[Math.floor(Math.random() * aiChoices.length)];
-      document.getElementById('drafted').innerHTML = 
-        `<p>You drafted <b>${player}</b>.<br>The AI drafted <b>${aiPick}</b>.</p>`;
+    <div class="layout">
+      <div class="panel">
+        <div style="display:flex; gap:12px; align-items:center; justify-content:space-between;">
+          <div><strong>Draft Board</strong></div>
+          <div class="small">Click a player from the right to draft when it's your turn.</div>
+        </div>
+
+        <div class="draft-board" id="draftBoard">
+          <!-- draft table injected here -->
+        </div>
+
+        <div class="rosters" id="rostersArea" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="panel">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div><strong>Available Players</strong></div>
+          <div class="small">Click to pick (if it's your turn)</div>
+        </div>
+
+        <div class="available" id="availableList" style="margin-top:8px;">
+          <!-- available players injected here -->
+        </div>
+
+        <hr style="margin:12px 0;">
+        <div><strong>Current Pick</strong></div>
+        <div id="currentPick" class="small" style="margin-top:6px;color:#333;"></div>
+      </div>
+    </div>
+
+    <footer>
+      Prototype — replace sample pool with your full player list for production.
+    </footer>
+  </div>
+
+<script>
+/*
+  Full draft prototype script
+  - Replace SAMPLE_PLAYERS with an external pool later (see notes)
+  - Human is team index 0 (but draft order is randomized)
+*/
+
+///// SAMPLE PLAYER POOL (small sample). Replace this later with the full pool.
+const SAMPLE_PLAYERS = [
+  { id: 'P1', name: 'Justin Jefferson', pos: 'WR', team: 'MIN', rank: 1 },
+  { id: 'P2', name: 'Christian McCaffrey', pos: 'RB', team: 'SF', rank: 2 },
+  { id: 'P3', name: 'Patrick Mahomes', pos: 'QB', team: 'KC', rank: 3 },
+  { id: 'P4', name: 'Travis Kelce', pos: 'TE', team: 'KC', rank: 4 },
+  { id: 'P5', name: 'Tyreek Hill', pos: 'WR', team: 'MIA', rank: 5 },
+  { id: 'P6', name: 'Ja\'Marr Chase', pos: 'WR', team: 'CIN', rank: 6 },
+  { id: 'P7', name: 'A.J. Brown', pos: 'WR', team: 'PHI', rank: 7 },
+  { id: 'P8', name: 'Joe Burrow', pos: 'QB', team: 'CIN', rank: 8 },
+  { id: 'P9', name: 'Nick Chubb', pos: 'RB', team: 'CLE', rank: 9 },
+  { id: 'P10', name: 'CeeDee Lamb', pos: 'WR', team: 'DAL', rank: 10 },
+  { id: 'P11', name: 'Derrick Henry', pos: 'RB', team: 'TEN', rank: 11 },
+  { id: 'P12', name: 'Stefon Diggs', pos: 'WR', team: 'BUF', rank: 12 },
+  { id: 'P13', name: 'Josh Allen', pos: 'QB', team: 'BUF', rank: 13 },
+  { id: 'P14', name: 'Davante Adams', pos: 'WR', team: 'LV', rank: 14 },
+  { id: 'P15', name: 'Saquon Barkley', pos: 'RB', team: 'NYG', rank: 15 },
+  { id: 'P16', name: 'Mark Andrews', pos: 'TE', team: 'BAL', rank: 16 },
+  { id: 'P17', name: 'Garrett Wilson', pos: 'WR', team: 'NYJ', rank: 17 },
+  { id: 'P18', name: 'Justin Tucker', pos: 'K', team: 'BAL', rank: 18 },
+  { id: 'P19', name: '49ers DEF', pos: 'DEF', team: 'SF', rank: 19 },
+  { id: 'P20', name: 'Ezekiel Elliott', pos: 'RB', team: 'DAL', rank: 20 },
+  // NOTE: in production you'll want hundreds of players here.
+];
+
+///// State
+let FULL_PLAYER_POOL = [];   // active available pool during draft (cloned from masterPool)
+let masterPool = [];         // master list (to load from server later)
+let teams = [];              // array of team objects { id, name, picks: [] }
+let draftOrder = [];         // array of team indices e.g. [3,1,0,2,4,...] representing pick order
+let currentPickIndex = 0;    // index into the total picks (0..(numTeams*rounds -1))
+let NUM_TEAMS = 10;
+let ROUNDS = 15;
+let HUMAN_TEAM_GLOBAL_ID = 0; // team id of human before order shuffle; human will be assigned to one draft slot
+let draftActive = false;
+
+///// DOM references
+const availableList = document.getElementById('availableList');
+const draftBoard = document.getElementById('draftBoard');
+const rostersArea = document.getElementById('rostersArea');
+const statusEl = document.getElementById('status');
+const currentPickEl = document.getElementById('currentPick');
+
+document.getElementById('startBtn').addEventListener('click', startNewDraft);
+document.getElementById('autoRunBtn').addEventListener('click', autoRunUntilHuman);
+document.getElementById('exportBtn').addEventListener('click', exportDraftJSON);
+
+///// Utility
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+function clonePool(pool) {
+  return pool.map(p => ({ ...p }));
+}
+
+///// Initialize UI with masterPool
+function loadMasterPool(list) {
+  masterPool = list.slice().map((p, idx) => ({ ...p, id: p.id || ('P' + (idx+1)) }));
+  resetUI();
+}
+
+function resetUI() {
+  availableList.innerHTML = '';
+  draftBoard.innerHTML = '';
+  rostersArea.innerHTML = '';
+  statusEl.textContent = '';
+  currentPickEl.textContent = '';
+}
+
+///// Start a full new draft
+function startNewDraft() {
+  // Read controls
+  NUM_TEAMS = parseInt(document.getElementById('numTeams').value) || 10;
+  ROUNDS = parseInt(document.getElementById('rounds').value) || 15;
+
+  // Prepare players
+  FULL_PLAYER_POOL = clonePool(masterPool);
+  // Sort by rank ascending (1 is best)
+  FULL_PLAYER_POOL.sort((a,b) => (a.rank || 999) - (b.rank || 999));
+
+  // Create teams
+  teams = [];
+  for (let i=0;i<NUM_TEAMS;i++){
+    const isHuman = (i===0);
+    teams.push({
+      id: i,
+      name: isHuman ? 'You' : `AI_${i}`,
+      picks: []
+    });
+  }
+
+  // Draft order: randomize team positions (we'll map human to one of them)
+  draftOrder = Array.from({length: NUM_TEAMS}, (_,i)=>i);
+  shuffle(draftOrder);
+
+  // Move human to first draft slot for clear UX: human plays as team at index draftOrder[0]
+  // But user asked earlier that human be Team 1; we will keep the human as the team with name 'You' and allow it to be at whatever slot draftOrder contains.
+  // If you want human to be always first slot, comment the shuffle above.
+  // For clarity, show which draft slot is human
+  const humanSlot = draftOrder.indexOf(0);
+
+  // reset pick counters
+  currentPickIndex = 0;
+  draftActive = true;
+
+  // Build the draft board table
+  renderDraftBoard();
+
+  // Render available player list
+  renderAvailablePlayers();
+
+  // Render rosters placeholders
+  renderRosters();
+
+  statusEl.textContent = `Draft started • You are at slot #${humanSlot + 1} of ${NUM_TEAMS}.`;
+  advanceDraftLoop(); // If AI goes first, it will pick automatically until it's human's turn.
+}
+
+///// Compute total picks and pick-to-team mapping
+function getTotalPicks() {
+  return NUM_TEAMS * ROUNDS;
+}
+
+function pickIndexToRoundAndPick(index) {
+  const round = Math.floor(index / NUM_TEAMS) + 1; // 1-based
+  const pickInRound = index % NUM_TEAMS; // 0..NUM_TEAMS-1
+  return { round, pickInRound };
+}
+
+function teamForPickIndex(index) {
+  const { round, pickInRound } = pickIndexToRoundAndPick(index);
+  // Snake: odd rounds left->right, even rounds right->left
+  const roundZero = round - 1;
+  if (round % 2 === 1) {
+    return draftOrder[pickInRound];
+  } else {
+    return draftOrder[NUM_TEAMS - 1 - pickInRound];
+  }
+}
+
+///// Rendering functions
+function renderDraftBoard() {
+  const totalPicks = getTotalPicks();
+  const rows = [];
+  let html = '<table class="draft-table"><thead><tr><th>Round</th>';
+  // header team names in draft order (left-to-right for round 1)
+  for (let col=0; col<NUM_TEAMS; col++){
+    html += `<th>Slot ${col+1}</th>`;
+  }
+  html += '</tr></thead><tbody>';
+  for (let r=1;r<=ROUNDS;r++){
+    html += `<tr><th>${r}</th>`;
+    for (let col=0; col<NUM_TEAMS; col++){
+      const pickIndex = (r-1)*NUM_TEAMS + col;
+      const teamIndex = teamForPickIndex(pickIndex);
+      const teamName = teams[teamIndex] ? teams[teamIndex].name : `T${teamIndex}`;
+      // Show picked player if exists
+      const pick = teams[teamIndex] && teams[teamIndex].picks.length >= r ? teams[teamIndex].picks[r-1] : null;
+      const isCurrent = pickIndex === currentPickIndex;
+      html += `<td class="${isCurrent ? 'current-pick' : ''}" id="cell-${pickIndex}">${pick ? pick.name + ' ('+pick.pos+')' : ''}</td>`;
     }
-  </script>
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  draftBoard.innerHTML = html;
+}
+
+function renderAvailablePlayers() {
+  // list top N players for browser performance
+  const list = FULL_PLAYER_POOL.slice(0, 500);
+  availableList.innerHTML = '';
+  list.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'player-card';
+    div.innerHTML = `<div class="player-meta"><span class="player-pos">${p.pos}</span> <strong>${p.name}</strong> <span class="small">— ${p.team}</span></div><div class="small">#${p.rank || '-'}</div>`;
+    div.onclick = () => {
+      // only allow manual pick if it's human's turn
+      if (!draftActive) return;
+      const currentTeamId = teamForPickIndex(currentPickIndex);
+      // human controls team with id 0 (teams[0]) — allow pick if currentTeamId === 0
+      if (currentTeamId !== 0) {
+        alert('Not your turn. Wait for the AI to pick.');
+        return;
+      }
+      makePick(currentPickIndex, p.id);
+    };
+    availableList.appendChild(div);
+  });
+}
+
+function renderRosters() {
+  rostersArea.innerHTML = '';
+  for (let t=0;t<teams.length;t++){
+    const team = teams[t];
+    const box = document.createElement('div');
+    box.className = 'team-box';
+    box.innerHTML = `<h4>${team.name}</h4><div class="small">${team.picks.length} picks</div><ol id="team-${t}">` +
+      team.picks.map(pk => `<li>${pk.name} <span class="small">(${pk.pos})</span></li>`).join('') + `</ol>`;
+    rostersArea.appendChild(box);
+  }
+}
+
+///// Draft mechanics
+function makePick(pickIndex, playerId) {
+  if (!draftActive) return;
+  const tid = teamForPickIndex(pickIndex);
+  // find player in FULL_PLAYER_POOL
+  const idx = FULL_PLAYER_POOL.findIndex(x => x.id === playerId);
+  if (idx === -1) {
+    alert('That player is no longer available.');
+    return;
+  }
+  const player = FULL_PLAYER_POOL.splice(idx,1)[0]; // remove from pool
+  // add to team picks in proper round order
+  teams[tid].picks.push(player);
+
+  // Update draft board cell for this pickIndex
+  const cell = document.getElementById(`cell-${pickIndex}`);
+  if (cell) cell.innerHTML = `${player.name} (${player.pos})`;
+
+  currentPickIndex++;
+  renderAvailablePlayers();
+  renderRosters();
+  updateCurrentPickUI();
+
+  // check for end of draft
+  if (currentPickIndex >= getTotalPicks()) {
+    finalizeDraft();
+    return;
+  }
+  // otherwise advance (AI will pick if it's AI turn)
+  setTimeout(advanceDraftLoop, 200); // slight delay for UX
+}
+
+function advanceDraftLoop() {
+  // While it's AI's turn, let the AI pick immediately (simple best available)
+  let safety = 0;
+  while (currentPickIndex < getTotalPicks() && safety < 1000) {
+    const teamId = teamForPickIndex(currentPickIndex);
+    if (teamId === 0) {
+      // human turn — stop auto-picking
+      updateCurrentPickUI();
+      break;
+    } else {
+      // AI picks: choose highest-ranked available
+      const pick = FULL_PLAYER_POOL.shift(); // pool is sorted by rank, so take first
+      teams[teamId].picks.push(pick);
+      // update draft board cell
+      const cell = document.getElementById(`cell-${currentPickIndex}`);
+      if (cell) cell.innerHTML = `${pick.name} (${pick.pos})`;
+      currentPickIndex++;
+      safety++;
+    }
+  }
+
+  renderAvailablePlayers();
+  renderRosters();
+  updateCurrentPickUI();
+
+  if (currentPickIndex >= getTotalPicks()) {
+    finalizeDraft();
+  }
+}
+
+function updateCurrentPickUI() {
+  if (currentPickIndex >= getTotalPicks()) {
+    currentPickEl.textContent = 'Draft complete.';
+    statusEl.textContent = 'Draft finished';
+    // remove current highlight
+    for (let i=0;i<NUM_TEAMS*ROUNDS;i++){
+      const cell = document.getElementById(`cell-${i}`);
+      if (cell) cell.classList.remove('current-pick');
+    }
+    return;
+  }
+  const teamId = teamForPickIndex(currentPickIndex);
+  const { round } = pickIndexToRoundAndPick(currentPickIndex);
+  const slotNumber = draftOrder.indexOf(teamId) + 1; // display intuitive slot pos
+  currentPickEl.textContent = `Round ${round} — Slot #${slotNumber} (${teams[teamId].name})`;
+  statusEl.textContent = `Pick ${currentPickIndex + 1} / ${getTotalPicks()}`;
+
+  // highlight the cell
+  for (let i=0;i<NUM_TEAMS*ROUNDS;i++){
+    const cell = document.getElementById(`cell-${i}`);
+    if (cell) cell.classList.remove('current-pick');
+  }
+  const cell = document.getElementById(`cell-${currentPickIndex}`);
+  if (cell) cell.classList.add('current-pick');
+}
+
+function finalizeDraft() {
+  draftActive = false;
+  updateCurrentPickUI();
+  alert('Draft complete! You can export the draft JSON using the Export button.');
+}
+
+function autoRunUntilHuman() {
+  // run AI picks until human's next turn (or finish)
+  if (!draftActive) return;
+  let iter = 0;
+  while (currentPickIndex < getTotalPicks()) {
+    const teamId = teamForPickIndex(currentPickIndex);
+    if (teamId === 0) break;
+    const pick = FULL_PLAYER_POOL.shift();
+    teams[teamId].picks.push(pick);
+    const cell = document.getElementById(`cell-${currentPickIndex}`);
+    if (cell) cell.innerHTML = `${pick.name} (${pick.pos})`;
+    currentPickIndex++;
+    iter++; if (iter > 1000) break;
+  }
+  renderAvailablePlayers();
+  renderRosters();
+  updateCurrentPickUI();
+  if (currentPickIndex >= getTotalPicks()) finalizeDraft();
+}
+
+function exportDraftJSON() {
+  const data = {
+    teams,
+    draftOrder,
+    totalPicks: getTotalPicks(),
+    rounds: ROUNDS,
+    numTeams: NUM_TEAMS,
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'draft-export.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+///// Boot with the sample pool
+loadMasterPool(SAMPLE_PLAYERS);
+
+</script>
 </body>
 </html>
