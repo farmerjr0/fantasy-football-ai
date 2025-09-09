@@ -111,6 +111,12 @@
     draftBoard.appendChild(teamDiv);
   }
 
+  // Draft log
+  const logContainer = document.createElement("div");
+  logContainer.innerHTML = `<h2>Draft Log</h2><ul id="draftLog"></ul>`;
+  document.body.appendChild(logContainer);
+  const draftLog = document.getElementById("draftLog");
+
   // Placeholder player pool (replace with real API later)
   const players = [
     { name: "Patrick Mahomes", position: "QB" },
@@ -136,6 +142,28 @@
   roundDisplay.innerText = `Round ${currentRound} of ${totalRounds}`;
   document.body.insertBefore(roundDisplay, draftBoard);
 
+  // Pick timer
+  let pickTime = 20; // seconds per pick
+  let timer;
+  const timerDisplay = document.createElement("h3");
+  timerDisplay.id = "timerDisplay";
+  timerDisplay.innerText = `Time Remaining: ${pickTime}s`;
+  document.body.insertBefore(timerDisplay, draftBoard);
+
+  function startTimer() {
+    clearInterval(timer);
+    let timeLeft = pickTime;
+    timerDisplay.innerText = `Time Remaining: ${timeLeft}s`;
+    timer = setInterval(() => {
+      timeLeft--;
+      timerDisplay.innerText = `Time Remaining: ${timeLeft}s`;
+      if (timeLeft <= 0) {
+        clearInterval(timer);
+        autoPick();
+      }
+    }, 1000);
+  }
+
   function renderPlayers() {
     playersList.innerHTML = "";
     players.forEach((player, index) => {
@@ -148,9 +176,20 @@
     });
   }
 
+  function highlightCurrentTeam() {
+    document.querySelectorAll(".team").forEach(team => {
+      team.style.border = "1px solid #ddd";
+      team.style.background = "#fff";
+    });
+    const current = document.querySelector(`#team-${currentTeam}`);
+    current.style.border = "2px solid #4CAF50";
+    current.style.background = "#eaffea";
+  }
+
   function draftPlayer(index) {
     if (currentRound > totalRounds) {
       alert("Draft is complete!");
+      showSummary();
       return;
     }
 
@@ -160,10 +199,13 @@
     li.innerText = `${player.name} (${player.position})`;
     teamUl.appendChild(li);
 
+    // Add to draft log
+    const logEntry = document.createElement("li");
+    logEntry.innerText = `Round ${currentRound}: Team ${currentTeam} drafted ${player.name} (${player.position})`;
+    draftLog.appendChild(logEntry);
+
     // Move to next team in snake order
     currentTeam += direction;
-
-    // Check if we reached the end of a round
     if (currentTeam > settings.teams) {
       direction = -1;
       currentTeam = settings.teams;
@@ -177,15 +219,37 @@
     // Update round display
     if (currentRound <= totalRounds) {
       roundDisplay.innerText = `Round ${currentRound} of ${totalRounds}`;
+      highlightCurrentTeam();
+      startTimer();
     } else {
       roundDisplay.innerText = `Draft Complete`;
+      timerDisplay.style.display = "none";
+      showSummary();
     }
 
     renderPlayers();
   }
 
+  function autoPick() {
+    if (players.length > 0) {
+      draftPlayer(0); // just grab best available
+    }
+  }
+
+  function showSummary() {
+    const summary = document.createElement("div");
+    summary.innerHTML = "<h2>Draft Summary</h2>";
+    draftBoard.querySelectorAll(".team").forEach(team => {
+      summary.appendChild(team.cloneNode(true));
+    });
+    document.body.appendChild(summary);
+  }
+
   renderPlayers();
+  highlightCurrentTeam();
+  startTimer();
 </script>
+
 
 </body>
 </html>
