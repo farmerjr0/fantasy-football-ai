@@ -7,155 +7,82 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #fafafa;
-      margin: 0;
+      background-color: #f2f2f2;
+      color: #222;
+      text-align: center;
       padding: 20px;
     }
-    h1, h2 {
-      text-align: center;
+    h1 {
+      font-size: 2em;
+      margin-bottom: 10px;
     }
     #leagueInfo {
-      text-align: center;
       margin-bottom: 20px;
+      font-weight: bold;
+    }
+    #roundDisplay, #timerDisplay {
+      margin: 15px 0;
       font-size: 1.2em;
     }
-    #draftBoard {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 10px;
+    #controls {
+      margin: 20px 0;
     }
-    .team {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    #playersList {
+      margin: 20px auto;
+      max-width: 500px;
+      text-align: left;
     }
-    .team h3 {
-      margin-top: 0;
-      font-size: 1em;
-      text-align: center;
-    }
-    ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    li {
-      font-size: 0.9em;
-      margin-bottom: 4px;
-    }
-    #playerPool {
-      margin-top: 30px;
-    }
-    #playerPool ul {
-      max-height: 300px;
-      overflow-y: auto;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      background: #fff;
-      padding: 10px;
-    }
-    #playerPool li {
+    #playersList li {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 4px 0;
-      border-bottom: 1px solid #eee;
+      padding: 6px;
+      border-bottom: 1px solid #ccc;
     }
-    button {
+    #playersList button {
       background-color: #4CAF50;
       color: white;
       border: none;
-      padding: 6px 10px;
-      border-radius: 6px;
+      padding: 6px 12px;
+      border-radius: 5px;
       cursor: pointer;
-      font-size: 0.8em;
     }
-    button:hover {
+    #playersList button:hover {
       background-color: #45a049;
+    }
+    #draftBoard {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+      text-align: left;
+    }
+    .team {
+      background: white;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+    }
+    .team ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    #draftLog {
+      margin-top: 30px;
+      text-align: left;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
     }
   </style>
 </head>
 <body>
   <h1>Draft Room</h1>
   <div id="leagueInfo"></div>
+  <div id="roundDisplay"></div>
+  <div id="timerDisplay"></div>
 
-  <h2>Draft Board</h2>
-  <div id="draftBoard"></div>
-
-  <div id="playerPool">
-    <h2>Available Players</h2>
-    <ul id="playersList"></ul>
-  </div>
-
-  <script>
-  // Load league settings from localStorage
-  const settings = JSON.parse(localStorage.getItem("leagueSettings")) || {
-    leagueName: "Default League",
-    teams: 10,
-    rosterSize: 14
-  };
-
-  // Show league info
-  document.getElementById("leagueInfo").innerText =
-    `${settings.leagueName} – ${settings.teams} Teams – Roster Size: ${settings.rosterSize}`;
-
-  // Build draft board
-  const draftBoard = document.getElementById("draftBoard");
-  for (let i = 1; i <= settings.teams; i++) {
-    const teamDiv = document.createElement("div");
-    teamDiv.classList.add("team");
-    teamDiv.id = `team-${i}`;
-    teamDiv.innerHTML = `<h3>Team ${i}</h3><ul></ul>`;
-    draftBoard.appendChild(teamDiv);
-  }
-
-  // Draft log
-  const logContainer = document.createElement("div");
-  logContainer.innerHTML = `<h2>Draft Log</h2><ul id="draftLog"></ul>`;
-  document.body.appendChild(logContainer);
-  const draftLog = document.getElementById("draftLog");
-
-  const playersList = document.getElementById("playersList");
-
-  // Round tracking
-  let currentTeam = 1;
-  let direction = 1; // 1 = forward, -1 = backward
-  let currentRound = 1;
-  const totalRounds = settings.rosterSize;
-
-  // Display current round
-  const roundDisplay = document.createElement("h2");
-  roundDisplay.id = "roundDisplay";
-  roundDisplay.innerText = `Round ${currentRound} of ${totalRounds}`;
-  document.body.insertBefore(roundDisplay, draftBoard);
-
-  // Pick timer
-  let pickTime = 20; // seconds per pick
-  let timer;
-  const timerDisplay = document.createElement("h3");
-  timerDisplay.id = "timerDisplay";
-  timerDisplay.innerText = `Time Remaining: ${pickTime}s`;
-  document.body.insertBefore(timerDisplay, draftBoard);
-
-  function startTimer() {
-    clearInterval(timer);
-    let timeLeft = pickTime;
-    timerDisplay.innerText = `Time Remaining: ${timeLeft}s`;
-    timer = setInterval(() => {
-      timeLeft--;
-      timerDisplay.innerText = `Time Remaining: ${timeLeft}s`;
-      if (timeLeft <= 0) {
-        clearInterval(timer);
-        autoPick();
-      }
-    }, 1000);
-  }
-
-  // Search + Filter controls
-  const controls = document.createElement("div");
-  controls.innerHTML = `
+  <div id="controls">
     <input type="text" id="searchInput" placeholder="Search players...">
     <select id="positionFilter">
       <option value="ALL">All</option>
@@ -166,121 +93,173 @@
       <option value="K">K</option>
       <option value="DST">DST</option>
     </select>
-  `;
-  document.body.insertBefore(controls, playersList);
+  </div>
 
-  function renderPlayers(players) {
-    playersList.innerHTML = "";
-    players.forEach((player, index) => {
+  <ul id="playersList"></ul>
+  <div id="draftBoard"></div>
+  <h2>Draft Log</h2>
+  <ul id="draftLog"></ul>
+
+  <script>
+    // Load league settings
+    const settings = JSON.parse(localStorage.getItem("leagueSettings")) || {
+      leagueName: "Default League",
+      teams: 10,
+      rosterSize: 14
+    };
+
+    document.getElementById("leagueInfo").innerText =
+      `${settings.leagueName} – ${settings.teams} Teams – Roster Size: ${settings.rosterSize}`;
+
+    const draftBoard = document.getElementById("draftBoard");
+    for (let i = 1; i <= settings.teams; i++) {
+      const teamDiv = document.createElement("div");
+      teamDiv.classList.add("team");
+      teamDiv.id = `team-${i}`;
+      teamDiv.innerHTML = `<h3>Team ${i}</h3><ul></ul>`;
+      draftBoard.appendChild(teamDiv);
+    }
+
+    const draftLog = document.getElementById("draftLog");
+    const playersList = document.getElementById("playersList");
+
+    // Round + timer
+    let currentTeam = 1;
+    let direction = 1;
+    let currentRound = 1;
+    const totalRounds = settings.rosterSize;
+    let pickTime = 20;
+    let timer;
+
+    const roundDisplay = document.getElementById("roundDisplay");
+    roundDisplay.innerText = `Round ${currentRound} of ${totalRounds}`;
+
+    const timerDisplay = document.getElementById("timerDisplay");
+
+    function startTimer() {
+      clearInterval(timer);
+      let timeLeft = pickTime;
+      timerDisplay.innerText = `Time Remaining: ${timeLeft}s`;
+      timer = setInterval(() => {
+        timeLeft--;
+        timerDisplay.innerText = `Time Remaining: ${timeLeft}s`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          autoPick();
+        }
+      }, 1000);
+    }
+
+    function renderPlayers(players) {
+      playersList.innerHTML = "";
+
+      // Sort by ranking
+      players.sort((a, b) => a.rank - b.rank);
+
+      players.forEach((player, index) => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <span>#${player.rank} – ${player.name} – ${player.position} (${player.team})</span>
+          <button onclick="draftPlayer(${index})">Draft</button>
+        `;
+        playersList.appendChild(li);
+      });
+    }
+
+    function filterPlayers() {
+      const searchText = document.getElementById("searchInput").value.toLowerCase();
+      const position = document.getElementById("positionFilter").value;
+      return players.filter(p => {
+        const matchesSearch = p.name.toLowerCase().includes(searchText);
+        const matchesPosition = position === "ALL" || p.position === position;
+        return matchesSearch && matchesPosition;
+      });
+    }
+
+    function highlightCurrentTeam() {
+      document.querySelectorAll(".team").forEach(team => {
+        team.style.border = "1px solid #ddd";
+        team.style.background = "#fff";
+      });
+      const current = document.querySelector(`#team-${currentTeam}`);
+      current.style.border = "2px solid #4CAF50";
+      current.style.background = "#eaffea";
+    }
+
+    function draftPlayer(index) {
+      if (currentRound > totalRounds) {
+        alert("Draft is complete!");
+        showSummary();
+        return;
+      }
+
+      const player = players.splice(index, 1)[0];
+      const teamUl = document.querySelector(`#team-${currentTeam} ul`);
       const li = document.createElement("li");
-      li.innerHTML = `
-        <span>${player.name} – ${player.position} (${player.team})</span>
-        <button onclick="draftPlayer(${index})">Draft</button>
-      `;
-      playersList.appendChild(li);
-    });
-  }
+      li.innerText = `${player.name} (${player.position})`;
+      teamUl.appendChild(li);
 
-  function filterPlayers() {
-    const searchText = document.getElementById("searchInput").value.toLowerCase();
-    const position = document.getElementById("positionFilter").value;
-    return players.filter(p => {
-      const matchesSearch = p.name.toLowerCase().includes(searchText);
-      const matchesPosition = position === "ALL" || p.position === position;
-      return matchesSearch && matchesPosition;
-    });
-  }
+      const logEntry = document.createElement("li");
+      logEntry.innerText = `Round ${currentRound}: Team ${currentTeam} drafted ${player.name} (${player.position})`;
+      draftLog.appendChild(logEntry);
 
-  function highlightCurrentTeam() {
-    document.querySelectorAll(".team").forEach(team => {
-      team.style.border = "1px solid #ddd";
-      team.style.background = "#fff";
-    });
-    const current = document.querySelector(`#team-${currentTeam}`);
-    current.style.border = "2px solid #4CAF50";
-    current.style.background = "#eaffea";
-  }
+      currentTeam += direction;
+      if (currentTeam > settings.teams) {
+        direction = -1;
+        currentTeam = settings.teams;
+        currentRound++;
+      } else if (currentTeam < 1) {
+        direction = 1;
+        currentTeam = 1;
+        currentRound++;
+      }
 
-  function draftPlayer(index) {
-    if (currentRound > totalRounds) {
-      alert("Draft is complete!");
-      showSummary();
-      return;
+      if (currentRound <= totalRounds) {
+        roundDisplay.innerText = `Round ${currentRound} of ${totalRounds}`;
+        highlightCurrentTeam();
+        startTimer();
+      } else {
+        roundDisplay.innerText = `Draft Complete`;
+        timerDisplay.style.display = "none";
+        showSummary();
+      }
+
+      renderPlayers(filterPlayers());
     }
 
-    const player = players.splice(index, 1)[0]; // remove from pool
-    const teamUl = document.querySelector(`#team-${currentTeam} ul`);
-    const li = document.createElement("li");
-    li.innerText = `${player.name} (${player.position})`;
-    teamUl.appendChild(li);
-
-    // Add to draft log
-    const logEntry = document.createElement("li");
-    logEntry.innerText = `Round ${currentRound}: Team ${currentTeam} drafted ${player.name} (${player.position})`;
-    draftLog.appendChild(logEntry);
-
-    // Move to next team in snake order
-    currentTeam += direction;
-    if (currentTeam > settings.teams) {
-      direction = -1;
-      currentTeam = settings.teams;
-      currentRound++;
-    } else if (currentTeam < 1) {
-      direction = 1;
-      currentTeam = 1;
-      currentRound++;
+    function autoPick() {
+      if (players.length > 0) {
+        draftPlayer(0);
+      }
     }
 
-    // Update round display
-    if (currentRound <= totalRounds) {
-      roundDisplay.innerText = `Round ${currentRound} of ${totalRounds}`;
-      highlightCurrentTeam();
-      startTimer();
-    } else {
-      roundDisplay.innerText = `Draft Complete`;
-      timerDisplay.style.display = "none";
-      showSummary();
+    function showSummary() {
+      const summary = document.createElement("div");
+      summary.innerHTML = "<h2>Draft Summary</h2>";
+      draftBoard.querySelectorAll(".team").forEach(team => {
+        summary.appendChild(team.cloneNode(true));
+      });
+      document.body.appendChild(summary);
     }
 
-    renderPlayers(filterPlayers());
-  }
+    // Load players
+    let players = [];
+    fetch("rankings.json")
+      .then(response => response.json())
+      .then(data => {
+        players = data;
+        renderPlayers(players);
+        highlightCurrentTeam();
+        startTimer();
+      })
+      .catch(err => {
+        console.error("Error loading rankings.json", err);
+      });
 
-  function autoPick() {
-    if (players.length > 0) {
-      draftPlayer(0); // grab best available
-    }
-  }
-
-  function showSummary() {
-    const summary = document.createElement("div");
-    summary.innerHTML = "<h2>Draft Summary</h2>";
-    draftBoard.querySelectorAll(".team").forEach(team => {
-      summary.appendChild(team.cloneNode(true));
+    // Hook search + filter
+    document.addEventListener("input", () => {
+      renderPlayers(filterPlayers());
     });
-    document.body.appendChild(summary);
-  }
-
-  // Fetch players from rankings.json
-  let players = [];
-  fetch("rankings.json")
-    .then(response => response.json())
-    .then(data => {
-      players = data;
-      renderPlayers(players);
-      highlightCurrentTeam();
-      startTimer();
-    })
-    .catch(err => {
-      console.error("Error loading rankings.json", err);
-    });
-
-  // Hook up search + filter
-  document.addEventListener("input", () => {
-    renderPlayers(filterPlayers());
-  });
-</script>
-
-
-
+  </script>
 </body>
 </html>
