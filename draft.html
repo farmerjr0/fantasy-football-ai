@@ -286,7 +286,7 @@
     });
 
     // --- Load players from /data/rankings.json ---
-    fetch("data/rankings.json", { cache: "no-store" })
+    fetch("../data/rankings.json", { cache: "no-store" })
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
