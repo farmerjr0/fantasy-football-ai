@@ -1,1 +1,113 @@
-<!DOCTYPE html><html><head><title>Fantasy Site</title></head><body><h1>Landing Page</h1></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Fantasy Football</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      color: #222;
+      text-align: center;
+      padding: 40px;
+    }
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 20px;
+    }
+    p {
+      font-size: 1.2em;
+      margin-bottom: 30px;
+    }
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      display: inline-block;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input, select {
+      margin-top: 5px;
+      padding: 8px;
+      width: 200px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 14px 28px;
+      font-size: 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 20px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    footer {
+      margin-top: 50px;
+      font-size: 0.9em;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>AI Fantasy Football</h1>
+  <p>Create your league and start drafting against the AI.</p>
+
+  <form id="leagueForm">
+    <label for="leagueName">League Name:</label>
+    <input type="text" id="leagueName" name="leagueName" placeholder="My League" required>
+
+    <label for="teams">Number of Teams:</label>
+    <select id="teams" name="teams" required>
+      <option value="8">8</option>
+      <option value="10" selected>10</option>
+      <option value="12">12</option>
+    </select>
+
+    <label for="rosterSize">Roster Size:</label>
+    <select id="rosterSize" name="rosterSize" required>
+      <option value="12">12</option>
+      <option value="14" selected>14</option>
+      <option value="16">16</option>
+    </select>
+
+    <button type="submit">Start Draft</button>
+  </form>
+
+  <footer>
+    &copy; 2025 AI Fantasy Football. All rights reserved.
+  </footer>
+
+  <script>
+    document.getElementById("leagueForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+
+      const leagueName = document.getElementById("leagueName").value;
+      const teams = document.getElementById("teams").value;
+      const rosterSize = document.getElementById("rosterSize").value;
+
+      // Save league settings to localStorage
+      localStorage.setItem("leagueSettings", JSON.stringify({
+        leagueName,
+        teams,
+        rosterSize
+      }));
+
+      // Redirect to draft room
+      window.location.href = "draft.html";
+    });
+  </script>
+</body>
+</html>
