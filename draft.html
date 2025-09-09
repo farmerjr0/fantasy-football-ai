@@ -80,6 +80,88 @@
     <ul id="draftLog"></ul>
   </div>
 
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Draft Room</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f5f5f7; color:#222; margin:0; padding:20px; }
+    h1 { text-align:center; margin:10px 0 6px; }
+    #leagueInfo, #roundDisplay, #timerDisplay { text-align:center; margin:6px 0; }
+    #controls { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:14px 0; }
+    #controls input, #controls select { padding:8px; border:1px solid #ccc; border-radius:6px; min-width:220px; }
+    #layout { display:grid; grid-template-columns: 1fr 2fr; gap:16px; align-items:start; }
+    @media (max-width: 900px){ #layout{ grid-template-columns:1fr; } }
+    #playersPanel, #boardPanel, #logPanel {
+      background:#fff; border:1px solid #ddd; border-radius:8px; padding:12px;
+      box-shadow:0 2px 6px rgba(0,0,0,0.06);
+    }
+    #playersPanel h2, #boardPanel h2, #logPanel h2 { margin:0 0 8px; }
+    #playersList { list-style:none; padding:0; margin:0; max-height:60vh; overflow:auto; }
+    #playersList li { display:flex; justify-content:space-between; align-items:center; padding:8px 6px; border-bottom:1px solid #eee; }
+    #playersList button { background:#4CAF50; color:#fff; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; }
+    #playersList button:hover { background:#3d9041; }
+    #draftBoard { display:grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap:12px; }
+    .team { background:#fff; border:1px solid #ddd; border-radius:8px; padding:8px; }
+    .team h3 { margin:0 0 6px; text-align:center; font-size:1rem; }
+    .team ul { list-style:none; margin:0; padding:0; max-height:220px; overflow:auto; }
+    .on-clock { border:2px solid #4CAF50 !important; background:#eaffea !important; }
+    #draftLog { list-style:none; margin:0; padding:0; max-height:40vh; overflow:auto; }
+    #draftLog li { padding:6px 4px; border-bottom:1px solid #eee; font-size:0.95rem; }
+    .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:#eee; font-size:0.8rem; margin-left:6px; }
+    .muted { color:#666; }
+    .small { font-size:0.9rem; }
+    .flex { display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap; }
+    .hidden { display:none; }
+  </style>
+</head>
+<body>
+  <h1>Draft Room</h1>
+  <div id="leagueInfo" class="small muted"></div>
+  <div id="roundDisplay" class="small"></div>
+  <div id="timerDisplay" class="small"></div>
+
+  <div id="controls">
+    <input type="text" id="searchInput" placeholder="Search players by name..." />
+    <select id="positionFilter" aria-label="Filter by position">
+      <option value="ALL">All Positions</option>
+      <option value="QB">QB</option>
+      <option value="RB">RB</option>
+      <option value="WR">WR</option>
+      <option value="TE">TE</option>
+      <option value="K">K</option>
+      <option value="DST">DST</option>
+    </select>
+    <select id="sortSelect" aria-label="Sort players">
+      <option value="rank">Sort: Rank</option>
+      <option value="name">Sort: Name</option>
+      <option value="position">Sort: Position</option>
+    </select>
+    <div class="flex">
+      <label class="small"><input type="checkbox" id="hideDST" /> Hide DST</label>
+      <label class="small"><input type="checkbox" id="hideK" /> Hide K</label>
+    </div>
+  </div>
+
+  <div id="layout">
+    <div id="playersPanel">
+      <h2>Available Players</h2>
+      <ul id="playersList"></ul>
+    </div>
+
+    <div id="boardPanel">
+      <h2>Draft Board</h2>
+      <div id="draftBoard"></div>
+    </div>
+  </div>
+
+  <div id="logPanel" style="margin-top:16px;">
+    <h2>Draft Log</h2>
+    <ul id="draftLog"></ul>
+  </div>
+
   <script>
     // --- Settings (from landing page) ---
     const settings = JSON.parse(localStorage.getItem("leagueSettings")) || {
@@ -313,5 +395,7 @@ const humanTeam = 1;
         playersList.innerHTML = `<li style="color:#b00020;">Could not load player pool. Check that <code>data/rankings.json</code> exists and is valid JSON.</li>`;
       });
   </script>
+</body>
+</html>
 </body>
 </html>
