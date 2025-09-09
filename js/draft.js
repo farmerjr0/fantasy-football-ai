@@ -121,3 +121,6 @@ function updateStatus() {
     status.textContent = `${teams[getCurrentTeamIndex()].name} is picking...`;
   }
 }
+function isUserTurn() {
+  return currentPick % totalTeams === 0; // Team 0 = human
+}
