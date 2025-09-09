@@ -85,6 +85,12 @@ function draftPlayer(id) {
     setTimeout(aiPick, 1000);
   }
 }
+function aiPick() {
+  if (availablePlayers.length === 0) return;
+
+  const aiChoice = availablePlayers[0]; // simple AI: best available
+  draftPlayer(aiChoice.id);
+}
 
 // AI picks best available
 function aiPick() {
