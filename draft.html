@@ -117,17 +117,6 @@
   document.body.appendChild(logContainer);
   const draftLog = document.getElementById("draftLog");
 
-  // Placeholder player pool (replace with real API later)
-  const players = [
-    { name: "Patrick Mahomes", position: "QB" },
-    { name: "Christian McCaffrey", position: "RB" },
-    { name: "Justin Jefferson", position: "WR" },
-    { name: "Travis Kelce", position: "TE" },
-    { name: "Josh Allen", position: "QB" },
-    { name: "Derrick Henry", position: "RB" },
-    { name: "Cooper Kupp", position: "WR" }
-  ];
-
   const playersList = document.getElementById("playersList");
 
   // Round tracking
@@ -164,12 +153,12 @@
     }, 1000);
   }
 
-  function renderPlayers() {
+  function renderPlayers(players) {
     playersList.innerHTML = "";
     players.forEach((player, index) => {
       const li = document.createElement("li");
       li.innerHTML = `
-        <span>${player.name} – ${player.position}</span>
+        <span>${player.name} – ${player.position} (${player.team})</span>
         <button onclick="draftPlayer(${index})">Draft</button>
       `;
       playersList.appendChild(li);
@@ -227,12 +216,12 @@
       showSummary();
     }
 
-    renderPlayers();
+    renderPlayers(players);
   }
 
   function autoPick() {
     if (players.length > 0) {
-      draftPlayer(0); // just grab best available
+      draftPlayer(0); // grab best available
     }
   }
 
@@ -245,10 +234,21 @@
     document.body.appendChild(summary);
   }
 
-  renderPlayers();
-  highlightCurrentTeam();
-  startTimer();
+  // Fetch players from rankings.json
+  let players = [];
+  fetch("rankings.json")
+    .then(response => response.json())
+    .then(data => {
+      players = data;
+      renderPlayers(players);
+      highlightCurrentTeam();
+      startTimer();
+    })
+    .catch(err => {
+      console.error("Error loading rankings.json", err);
+    });
 </script>
+
 
 
 </body>
