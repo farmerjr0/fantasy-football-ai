@@ -28,5 +28,20 @@
   </div>
 
   <script src="js/draft.js"></script>
+<script>
+  // Fetch and display players from rankings.json
+  fetch('rankings.json')
+    .then(response => response.json())
+    .then(players => {
+      const list = document.getElementById('player-list');
+      players.forEach(player => {
+        const li = document.createElement('li');
+        li.textContent = `${player.name} - ${player.position} (${player.team})`;
+        list.appendChild(li);
+      });
+    })
+    .catch(error => console.error('Error loading player pool:', error));
+</script>
+
 </body>
 </html>
