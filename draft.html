@@ -153,6 +153,22 @@
     }, 1000);
   }
 
+  // Search + Filter controls
+  const controls = document.createElement("div");
+  controls.innerHTML = `
+    <input type="text" id="searchInput" placeholder="Search players...">
+    <select id="positionFilter">
+      <option value="ALL">All</option>
+      <option value="QB">QB</option>
+      <option value="RB">RB</option>
+      <option value="WR">WR</option>
+      <option value="TE">TE</option>
+      <option value="K">K</option>
+      <option value="DST">DST</option>
+    </select>
+  `;
+  document.body.insertBefore(controls, playersList);
+
   function renderPlayers(players) {
     playersList.innerHTML = "";
     players.forEach((player, index) => {
@@ -162,6 +178,16 @@
         <button onclick="draftPlayer(${index})">Draft</button>
       `;
       playersList.appendChild(li);
+    });
+  }
+
+  function filterPlayers() {
+    const searchText = document.getElementById("searchInput").value.toLowerCase();
+    const position = document.getElementById("positionFilter").value;
+    return players.filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(searchText);
+      const matchesPosition = position === "ALL" || p.position === position;
+      return matchesSearch && matchesPosition;
     });
   }
 
@@ -216,7 +242,7 @@
       showSummary();
     }
 
-    renderPlayers(players);
+    renderPlayers(filterPlayers());
   }
 
   function autoPick() {
@@ -247,6 +273,11 @@
     .catch(err => {
       console.error("Error loading rankings.json", err);
     });
+
+  // Hook up search + filter
+  document.addEventListener("input", () => {
+    renderPlayers(filterPlayers());
+  });
 </script>
 
 
