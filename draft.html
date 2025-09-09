@@ -4,311 +4,199 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Draft Room</title>
-  <style>
-    body { font-family: Arial, sans-serif; background:#f5f5f7; color:#222; margin:0; padding:20px; }
-    h1 { text-align:center; margin:10px 0 6px; }
-    #leagueInfo, #roundDisplay, #timerDisplay { text-align:center; margin:6px 0; }
-    #controls { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:14px 0; }
-    #controls input, #controls select { padding:8px; border:1px solid #ccc; border-radius:6px; min-width:220px; }
-    #layout { display:grid; grid-template-columns: 1fr 2fr; gap:16px; align-items:start; }
-    @media (max-width: 900px){ #layout{ grid-template-columns:1fr; } }
-    #playersPanel, #boardPanel, #logPanel {
-      background:#fff; border:1px solid #ddd; border-radius:8px; padding:12px;
-      box-shadow:0 2px 6px rgba(0,0,0,0.06);
-    }
-    #playersPanel h2, #boardPanel h2, #logPanel h2 { margin:0 0 8px; }
-    #playersList { list-style:none; padding:0; margin:0; max-height:60vh; overflow:auto; }
-    #playersList li { display:flex; justify-content:space-between; align-items:center; padding:8px 6px; border-bottom:1px solid #eee; }
-    #playersList button { background:#4CAF50; color:#fff; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; }
-    #playersList button:hover { background:#3d9041; }
-    #draftBoard { display:grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap:12px; }
-    .team { background:#fff; border:1px solid #ddd; border-radius:8px; padding:8px; }
-    .team h3 { margin:0 0 6px; text-align:center; font-size:1rem; }
-    .team ul { list-style:none; margin:0; padding:0; max-height:220px; overflow:auto; }
-    .on-clock { border:2px solid #4CAF50 !important; background:#eaffea !important; }
-    #draftLog { list-style:none; margin:0; padding:0; max-height:40vh; overflow:auto; }
-    #draftLog li { padding:6px 4px; border-bottom:1px solid #eee; font-size:0.95rem; }
-    .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:#eee; font-size:0.8rem; margin-left:6px; }
-    .muted { color:#666; }
-    .small { font-size:0.9rem; }
-    .flex { display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap; }
-    .hidden { display:none; }
-  </style>
+  <link rel="stylesheet" href="../css/styles.css"/>
 </head>
 <body>
-  <h1>Draft Room</h1>
-  <div id="leagueInfo" class="small muted"></div>
-  <div id="roundDisplay" class="small"></div>
-  <div id="timerDisplay" class="small"></div>
+  <h1>Fantasy Draft Room</h1>
 
-  <div id="controls">
-    <input type="text" id="searchInput" placeholder="Search players by name..." />
-    <select id="positionFilter" aria-label="Filter by position">
-      <option value="ALL">All Positions</option>
-      <option value="QB">QB</option>
-      <option value="RB">RB</option>
-      <option value="WR">WR</option>
-      <option value="TE">TE</option>
-      <option value="K">K</option>
-      <option value="DST">DST</option>
-    </select>
-    <select id="sortSelect" aria-label="Sort players">
-      <option value="rank">Sort: Rank</option>
-      <option value="name">Sort: Name</option>
-      <option value="position">Sort: Position</option>
-    </select>
-    <div class="flex">
-      <label class="small"><input type="checkbox" id="hideDST" /> Hide DST</label>
-      <label class="small"><input type="checkbox" id="hideK" /> Hide K</label>
-    </div>
+  <div id="draft-status">
+    <p>Round: <span id="round-number">1</span></p>
+    <p>Team on the clock: <span id="team-number">1</span></p>
+    <p>Timer: <span id="timer">30</span> seconds</p>
+    <button id="draft-button" style="display:none;">Draft Selected Player</button>
   </div>
 
-  <div id="layout">
-    <div id="playersPanel">
-      <h2>Available Players</h2>
-      <ul id="playersList"></ul>
-    </div>
-
-    <div id="boardPanel">
-      <h2>Draft Board</h2>
-      <div id="draftBoard"></div>
-    </div>
+  <div id="search-box">
+    <input type="text" id="search" placeholder="Search players by name or position"/>
   </div>
 
-  <div id="logPanel" style="margin-top:16px;">
-    <h2>Draft Log</h2>
-    <ul id="draftLog"></ul>
+  <div id="available-players">
+    <h2>Available Players</h2>
+    <ul id="player-list"></ul>
+  </div>
+
+  <div id="teams">
+    <h2>Teams</h2>
+    <div id="team-boards"></div>
   </div>
 
   <script>
-    // --- Settings (from landing page) ---
-    const settings = JSON.parse(localStorage.getItem("leagueSettings")) || {
-      leagueName: "Default League",
-      teams: 10,
-      rosterSize: 14
-    };
+    // === CONFIG ===
+    const totalTeams = 10;
+    const totalRounds = 15;
+    const pickTime = 30; // seconds
+    const humanTeam = 1; // user controls this team
 
-    // --- State ---
-    let players = [];          // master array of remaining players
-    let filteredView = [];     // current filtered/sorted view (derived from players)
-    let currentTeam = 1;
-    let direction = 1;         // 1 forward, -1 backward
+    // === STATE ===
+    let players = [];
     let currentRound = 1;
-    const totalRounds = Number(settings.rosterSize) || 14;
-    let pickTime = 20;         // seconds per pick
-    let timer = null;
+    let currentTeam = 1;
+    let direction = 1; // 1 = forward, -1 = backward
+    let timerInterval = null;
+    let selectedPlayerUid = null;
 
-    // --- Elements ---
-    const leagueInfo = document.getElementById("leagueInfo");
-    const roundDisplay = document.getElementById("roundDisplay");
-    const timerDisplay = document.getElementById("timerDisplay");
-    const draftBoard = document.getElementById("draftBoard");
-    const playersList = document.getElementById("playersList");
-    const draftLog = document.getElementById("draftLog");
-
-    // --- Init league header ---
-    leagueInfo.textContent = `${settings.leagueName} — ${settings.teams} Teams — Roster Size: ${settings.rosterSize}`;
-    roundDisplay.textContent = `Round ${currentRound} of ${totalRounds}`;
-
-    // --- Build Draft Board ---
-    const teamCount = Number(settings.teams) || 10;
-    for (let i = 1; i <= teamCount; i++) {
-      const teamDiv = document.createElement("div");
-      teamDiv.className = "team";
-      teamDiv.id = `team-${i}`;
-      teamDiv.innerHTML = `<h3>Team ${i}</h3><ul></ul>`;
-      draftBoard.appendChild(teamDiv);
-    }
-
-    // --- Helpers ---
-    function uid() {
-      // simple unique id for session
-      return 'p_' + Math.random().toString(36).slice(2, 10);
-    }
-
-    function highlightCurrentTeam() {
-      document.querySelectorAll(".team").forEach(t => t.classList.remove("on-clock"));
-      const node = document.getElementById(`team-${currentTeam}`);
-      if (node) node.classList.add("on-clock");
-    }
-
-    function updateRoundAndClock() {
-      if (currentRound <= totalRounds) {
-        roundDisplay.textContent = `Round ${currentRound} of ${totalRounds}`;
-        highlightCurrentTeam();
+    // === INIT ===
+    async function initDraft() {
+      try {
+        const res = await fetch("../data/rankings.json");
+        players = await res.json();
+        renderPlayers(players);
+        renderTeams();
+        updateRoundAndClock();
         startTimer();
-      } else {
-        roundDisplay.textContent = "Draft Complete";
-        timerDisplay.classList.add("hidden");
-        showSummary();
+      } catch (err) {
+        console.error("Error loading player pool:", err);
+        document.getElementById("player-list").innerHTML = "<li>Could not load players. Check ../data/rankings.json</li>";
       }
     }
 
+    // === RENDER PLAYERS ===
+    function renderPlayers(list = players) {
+      const ul = document.getElementById("player-list");
+      ul.innerHTML = "";
+      list.sort((a,b) => (a.rank ?? 9999) - (b.rank ?? 9999));
+      list.forEach(p => {
+        const li = document.createElement("li");
+        li.textContent = `${p.rank}. ${p.name} (${p.position} - ${p.team ?? ""})`;
+        li.onclick = () => {
+          selectedPlayerUid = p.uid;
+          highlightSelected(li);
+        };
+        ul.appendChild(li);
+      });
+    }
+
+    function highlightSelected(li) {
+      [...document.querySelectorAll("#player-list li")].forEach(el => el.style.background = "");
+      li.style.background = "lightgreen";
+    }
+
+    // === RENDER TEAMS ===
+    function renderTeams() {
+      const container = document.getElementById("team-boards");
+      container.innerHTML = "";
+      for (let i=1; i<=totalTeams; i++) {
+        const div = document.createElement("div");
+        div.id = `team-${i}`;
+        div.innerHTML = `<h3>Team ${i}</h3><ul></ul>`;
+        container.appendChild(div);
+      }
+    }
+
+    // === TIMER ===
     function startTimer() {
-      clearInterval(timer);
-      let timeLeft = pickTime;
-      timerDisplay.classList.remove("hidden");
-      timerDisplay.textContent = `Time Remaining: ${timeLeft}s`;
-      timer = setInterval(() => {
-        timeLeft--;
-        timerDisplay.textContent = `Time Remaining: ${timeLeft}s`;
-        if (timeLeft <= 0) {
-          clearInterval(timer);
-          autoPick();
+      clearInterval(timerInterval);
+      let time = pickTime;
+      document.getElementById("timer").textContent = time;
+
+      // Show/hide draft button
+      document.getElementById("draft-button").style.display = 
+        (currentTeam === humanTeam) ? "inline-block" : "none";
+
+      timerInterval = setInterval(() => {
+        time--;
+        document.getElementById("timer").textContent = time;
+        if (time <= 0) {
+          clearInterval(timerInterval);
+          if (currentTeam === humanTeam) {
+            autoPick(); // timeout = auto AI pick
+          } else {
+            autoPick();
+          }
         }
       }, 1000);
-    }
 
-    function logPick(teamNo, roundNo, player) {
-      const li = document.createElement("li");
-      li.textContent = `Round ${roundNo}: Team ${teamNo} drafted ${player.name} (${player.position}${player.team ? " - " + player.team : ""})`;
-      draftLog.appendChild(li);
-      draftLog.scrollTop = draftLog.scrollHeight;
-    }
-
-    function moveSnake() {
-      currentTeam += direction;
-      // end-of-round edges
-      if (currentTeam > teamCount) {
-        direction = -1;
-        currentTeam = teamCount;
-        currentRound++;
-      } else if (currentTeam < 1) {
-        direction = 1;
-        currentTeam = 1;
-        currentRound++;
+      // If AI’s turn, auto-pick after short delay
+      if (currentTeam !== humanTeam) {
+        setTimeout(() => {
+          autoPick();
+        }, 2000);
       }
     }
 
-    function showSummary() {
-      const summary = document.createElement("div");
-      summary.style.marginTop = "16px";
-      summary.innerHTML = "<h2>Draft Summary</h2>";
-      draftBoard.querySelectorAll(".team").forEach(team => {
-        summary.appendChild(team.cloneNode(true));
-      });
-      document.body.appendChild(summary);
-    }
-
-    // --- Rendering the Player Pool (filter + sort safe) ---
-    function applyFiltersAndSort() {
-      const q = document.getElementById("searchInput").value.trim().toLowerCase();
-      const pos = document.getElementById("positionFilter").value;
-      const sort = document.getElementById("sortSelect").value;
-      const hideDST = document.getElementById("hideDST").checked;
-      const hideK = document.getElementById("hideK").checked;
-
-      filteredView = players.filter(p => {
-        const nameOK = !q || p.name.toLowerCase().includes(q);
-        const posOK = pos === "ALL" || p.position === pos;
-        const hideOK = (!hideDST || p.position !== "DST") && (!hideK || p.position !== "K");
-        return nameOK && posOK && hideOK;
-      });
-
-      if (sort === "rank") {
-        filteredView.sort((a,b) => (a.rank ?? 9999) - (b.rank ?? 9999));
-      } else if (sort === "name") {
-        filteredView.sort((a,b) => a.name.localeCompare(b.name));
-      } else if (sort === "position") {
-        const order = {QB:1,RB:2,WR:3,TE:4,K:5,DST:6};
-        filteredView.sort((a,b) => (order[a.position]||99)-(order[b.position]||99) || (a.rank ?? 9999)-(b.rank ?? 9999));
-      }
-    }
-
-    function renderPlayers() {
-      applyFiltersAndSort();
-      playersList.innerHTML = "";
-      if (filteredView.length === 0) {
-        playersList.innerHTML = `<li class="muted">No players match your filters.</li>`;
-        return;
-      }
-      filteredView.forEach(p => {
-        const li = document.createElement("li");
-        const left = document.createElement("span");
-        left.textContent = `#${p.rank ?? "—"} — ${p.name} — ${p.position}${p.team ? " ("+p.team+")" : ""}`;
-
-        const right = document.createElement("div");
-        const btn = document.createElement("button");
-        btn.textContent = "Draft";
-        btn.dataset.uid = p.uid;
-        btn.addEventListener("click", () => draftByUid(p.uid));
-
-        right.appendChild(btn);
-        li.appendChild(left);
-        li.appendChild(right);
-        playersList.appendChild(li);
-      });
-    }
-
-    // --- Draft Actions ---
+    // === DRAFT LOGIC ===
     function draftByUid(uid) {
       if (currentRound > totalRounds) return;
-
-      // find in master array
-      const idx = players.findIndex(p => p.uid === uid);
-      if (idx === -1) {
-        // Player may already be drafted (stale filtered view)
-        renderPlayers();
+      if (currentTeam !== humanTeam) {
+        alert("It's not your turn!");
         return;
       }
+      draftAction(uid);
+    }
+
+    function draftAction(uid) {
+      const idx = players.findIndex(p => p.uid === uid);
+      if (idx === -1) return;
+
       const player = players.splice(idx, 1)[0];
 
-      // put on team
       const teamUL = document.querySelector(`#team-${currentTeam} ul`);
       const li = document.createElement("li");
       li.textContent = `${player.name} (${player.position}${player.team ? " - " + player.team : ""})`;
       teamUL.appendChild(li);
 
-      // log
-      logPick(currentTeam, currentRound, player);
-
-      // advance snake
       moveSnake();
-
-      // update UI
       updateRoundAndClock();
       renderPlayers();
     }
 
     function autoPick() {
-      // Auto-pick best available by current sort (default rank)
       if (players.length === 0 || currentRound > totalRounds) return;
-      // ensure filteredView up-to-date and not empty
-      applyFiltersAndSort();
-      let pickCandidate = filteredView.length > 0 ? filteredView[0] : players.sort((a,b)=>(a.rank??9999)-(b.rank??9999))[0];
-      if (pickCandidate) draftByUid(pickCandidate.uid);
+      const best = players.sort((a,b) => (a.rank ?? 9999) - (b.rank ?? 9999))[0];
+      if (best) draftAction(best.uid);
     }
 
-    // --- Wire controls ---
-    document.addEventListener("input", (e) => {
-      const ids = ["searchInput","positionFilter","sortSelect","hideDST","hideK"];
-      if (ids.includes(e.target.id)) renderPlayers();
+    function moveSnake() {
+      if (direction === 1 && currentTeam === totalTeams) {
+        direction = -1;
+        currentRound++;
+      } else if (direction === -1 && currentTeam === 1) {
+        direction = 1;
+        currentRound++;
+      } else {
+        currentTeam += direction;
+      }
+    }
+
+    function updateRoundAndClock() {
+      document.getElementById("round-number").textContent = currentRound;
+      document.getElementById("team-number").textContent = currentTeam;
+      if (currentRound <= totalRounds) startTimer();
+    }
+
+    // === SEARCH ===
+    document.getElementById("search").addEventListener("input", (e) => {
+      const term = e.target.value.toLowerCase();
+      const filtered = players.filter(p =>
+        p.name.toLowerCase().includes(term) ||
+        p.position.toLowerCase().includes(term) ||
+        (p.team && p.team.toLowerCase().includes(term))
+      );
+      renderPlayers(filtered);
     });
 
-    // --- Load players from /data/rankings.json ---
-    fetch("../data/rankings.json", { cache: "no-store" })
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then(data => {
-        // Normalize + add uid; tolerate missing fields
-        players = (Array.isArray(data) ? data : []).map((p, i) => ({
-          uid: uid(),
-          rank: typeof p.rank === "number" ? p.rank : i + 1,
-          name: p.name || p.player || "Unknown",
-          position: p.position || p.pos || "UNK",
-          team: p.team || p.nfl_team || ""
-        }));
-        // Initial UI
-        highlightCurrentTeam();
-        renderPlayers();
-        startTimer();
-      })
-      .catch(err => {
-        console.error("Failed to load data/rankings.json:", err);
-        playersList.innerHTML = `<li style="color:#b00020;">Could not load player pool. Check that <code>data/rankings.json</code> exists and is valid JSON.</li>`;
-      });
+    // === BUTTON ===
+    document.getElementById("draft-button").addEventListener("click", () => {
+      if (selectedPlayerUid) {
+        draftByUid(selectedPlayerUid);
+        selectedPlayerUid = null;
+      } else {
+        alert("Please select a player first!");
+      }
+    });
+
+    // === START ===
+    initDraft();
   </script>
 </body>
 </html>
